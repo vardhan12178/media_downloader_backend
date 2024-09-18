@@ -11,7 +11,7 @@ const app = express();
 
 app.use(express.json());
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://your-project-name.vercel.app'], // Update this with your Vercel URL
+  origin: ['http://localhost:3000', 'https://instant-video-downloader.vercel.app/'], 
 }));
 app.use(compression());
 
