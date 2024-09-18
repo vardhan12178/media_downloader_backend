@@ -4,14 +4,16 @@ const cors = require('cors');
 const path = require('path');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
+const fs = require('fs');
+const https = require('https');
 require('dotenv').config();
 
 const app = express();
 
+app.use(express.json());
 app.use(cors({
   origin: ['http://localhost:3000', 'https://instant-video-downloader.vercel.app'],
 }));
-app.use(express.json());
 app.use(compression());
 
 const limiter = rateLimit({
@@ -20,9 +22,24 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-app.options('*', cors());
 
-const ytDlpPath = process.env.YTDLP_PATH || path.join('C:', 'yt-dlp', 'yt-dlp.exe');
+const ytDlpPath = path.join(__dirname, 'yt-dlp');
+
+
+function downloadYtDlp() {
+  const file = fs.createWriteStream(ytDlpPath);
+  https.get('https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp', (response) => {
+    response.pipe(file);
+    file.on('finish', () => {
+      fs.chmodSync(ytDlpPath, '755'); 
+    });
+  });
+}
+
+
+if (!fs.existsSync(ytDlpPath)) {
+  downloadYtDlp();
+}
 
 app.post('/api/download', (req, res) => {
   const { platform, url } = req.body;
