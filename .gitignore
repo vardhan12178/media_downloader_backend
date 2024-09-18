@@ -1,0 +1,41 @@
+# Node modules
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Logs
+logs/
+*.log
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Dependency directories
+jspm_packages/
+bower_components/
+
+# Build directories
+dist/
+build/
+
+# Ignore .env file (if you're using environment variables)
+.env
+
+# Ignore .DS_Store for macOS
+.DS_Store
+
+# Ignore IDE specific files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Ignore cache
+.cache/
+
+# Coverage directory used by testing tools
+coverage/
+
+# Ignore production build files if using Netlify
+.netlify/
