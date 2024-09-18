@@ -8,21 +8,21 @@ require('dotenv').config();
 
 const app = express();
 
-
-app.use(express.json());
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://instant-video-downloader.vercel.app/'], 
+  origin: ['http://localhost:3000', 'https://instant-video-downloader.vercel.app'],
 }));
+app.use(express.json());
 app.use(compression());
 
 const limiter = rateLimit({
-  windowMs: 10 * 60 * 1000, 
-  max: 100, 
+  windowMs: 10 * 60 * 1000,
+  max: 100,
 });
 app.use(limiter);
 
-const ytDlpPath = process.env.YTDLP_PATH || path.join('C:', 'yt-dlp', 'yt-dlp.exe');
+app.options('*', cors());
 
+const ytDlpPath = process.env.YTDLP_PATH || path.join('C:', 'yt-dlp', 'yt-dlp.exe');
 
 app.post('/api/download', (req, res) => {
   const { platform, url } = req.body;
