@@ -7,11 +7,11 @@ const fs = require('fs');
 const app = express();
 
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://instant-video-downloader.vercel.app/'],
-  methods: 'GET,POST',
-  allowedHeaders: 'Content-Type, Authorization'
-}));
-
+    origin: ['http://localhost:3000', 'https://instant-video-downloader.vercel.app'], // No trailing slash
+    methods: 'GET,POST',
+    allowedHeaders: 'Content-Type, Authorization'
+  }));
+  
 app.use(express.json());
 
 const downloadVideo = (videoUrl, outputFilePath, retries, delay) => {
