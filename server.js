@@ -3,14 +3,16 @@ const cors = require('cors');
 const { exec } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+const axios = require('axios');
+require('dotenv').config(); // Load environment variables from .env file
 
 const app = express();
 
 app.use(cors({
-    origin: ['http://localhost:3000', 'https://instant-video-downloader.vercel.app'], // No trailing slash
+    origin: ['http://localhost:3000', 'https://instant-video-downloader.vercel.app'],
     methods: 'GET,POST',
     allowedHeaders: 'Content-Type, Authorization'
-  }));
+}));
   
 app.use(express.json());
 
@@ -20,7 +22,6 @@ const downloadVideo = (videoUrl, outputFilePath, retries, delay) => {
 
     exec(command, (error, stdout, stderr) => {
       if (error) {
-        // Check if the error is an HTTP 429 error
         if (stderr.includes("HTTP Error 429")) {
           if (retries > 0) {
             console.log(`Received 429 error. Retrying in ${delay / 1000} seconds...`);
@@ -42,43 +43,56 @@ const downloadVideo = (videoUrl, outputFilePath, retries, delay) => {
 
 app.post('/api/download', async (req, res) => {
   const videoUrl = req.body.url;
+  const captchaToken = req.body.captchaToken;
 
-  if (!videoUrl) {
-    return res.status(400).json({ error: 'No URL provided' });
+  if (!videoUrl || !captchaToken) {
+    return res.status(400).json({ error: 'No URL or CAPTCHA token provided' });
   }
 
-  const timestamp = Date.now();
-  const outputFileName = `video_${timestamp}.mp4`;
-  const outputFilePath = path.join(__dirname, 'downloads', outputFileName);
+  // Verify CAPTCHA token
+  const secretKey = process.env.RECAPTCHA_SECRET_KEY; // Use environment variable
+  const verificationUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${captchaToken}`;
 
   try {
+    const response = await axios.post(verificationUrl);
+    const { success } = response.data;
+
+    if (!success) {
+      return res.status(403).json({ error: 'CAPTCHA verification failed' });
+    }
+
+    const timestamp = Date.now();
+    const outputFileName = `video_${timestamp}.mp4`;
+    const outputFilePath = path.join(__dirname, 'downloads', outputFileName);
+
     await downloadVideo(videoUrl, outputFilePath, 3, 10000); // 3 retries, 10 seconds delay
 
     fs.access(outputFilePath, fs.constants.F_OK, (err) => {
       if (err) {
-        return res.status(404).json({ error: 'Downloaded file not found' });
+        console.error(err);
+        return res.status(500).json({ error: 'Failed to access the downloaded file' });
       }
 
-      res.download(outputFilePath, outputFileName, (downloadError) => {
-        if (downloadError) {
-          return res.status(500).json({ error: 'Failed to send the video file' });
+      res.download(outputFilePath, outputFileName, (err) => {
+        if (err) {
+          console.error(err);
+          return res.status(500).json({ error: 'Failed to download the video' });
         }
 
-        fs.unlink(outputFilePath, (unlinkError) => {
-          if (unlinkError) {
-            console.error('Failed to delete the file:', unlinkError);
-          }
+        // Optionally delete the file after download
+        fs.unlink(outputFilePath, (err) => {
+          if (err) console.error('Failed to delete file:', err);
         });
       });
     });
   } catch (error) {
-    return res.status(500).json(error);
+    console.error('Error:', error);
+    res.status(500).json({ error: 'An error occurred during processing' });
   }
 });
 
-app.use('/downloads', express.static(path.join(__dirname, 'downloads')));
-
 const PORT = process.env.PORT || 5000;
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
