@@ -7,12 +7,14 @@ const fs = require('fs');
 const app = express();
 
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://instant-video-downloader.vercel.app/'],
+  origin: ['http://localhost:3000', 'https://instant-video-downloader.vercel.app'],
   methods: 'GET,POST',
   allowedHeaders: 'Content-Type, Authorization'
 }));
 
 app.use(express.json());
+
+app.options('*', cors());
 
 app.post('/api/download', (req, res) => {
   const videoUrl = req.body.url;
@@ -44,6 +46,7 @@ app.post('/api/download', (req, res) => {
 
         fs.unlink(outputFilePath, (unlinkError) => {
           if (unlinkError) {
+            console.error(`Error deleting file: ${unlinkError.message}`);
           }
         });
       });
@@ -54,4 +57,6 @@ app.post('/api/download', (req, res) => {
 app.use('/downloads', express.static(path.join(__dirname, 'downloads')));
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT);
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
