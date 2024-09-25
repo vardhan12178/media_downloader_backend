@@ -7,7 +7,6 @@ require('dotenv').config();
 
 const app = express();
 
-
 app.use(cors({
   origin: ['http://localhost:3000', 'https://instant-video-downloader.vercel.app'],
   methods: 'GET,POST',
@@ -15,7 +14,6 @@ app.use(cors({
 }));
 
 app.use(express.json());
-
 
 const getAvailableFormats = (videoUrl) => {
   return new Promise((resolve, reject) => {
@@ -25,7 +23,6 @@ const getAvailableFormats = (videoUrl) => {
       if (error) {
         reject({ error: 'Failed to fetch available formats', details: stderr });
       } else {
-      
         const formats = stdout.split('\n').filter(line => line.trim() !== '');
         resolve(formats);
       }
@@ -33,21 +30,19 @@ const getAvailableFormats = (videoUrl) => {
   });
 };
 
-
-const downloadVideo = (videoUrl, outputFilePath, cookiesPath = '') => {
+const downloadVideo = (videoUrl, outputFilePath, cookiesPath) => {
   return new Promise((resolve, reject) => {
-    const command = `yt-dlp "${videoUrl}" -f "best" -o "${outputFilePath}"`;
+    const command = `yt-dlp "${videoUrl}" -f "best" --cookies "${cookiesPath}" -o "${outputFilePath}"`;
     
     exec(command, (error, stdout, stderr) => {
       if (error) {
         reject({ error: 'Failed to download video', details: stderr });
       } else {
-        resolve();
+        resolve(stdout); // Return the output for logging or further processing
       }
     });
   });
 };
-
 
 app.post('/api/download', async (req, res) => {
   const videoUrl = req.body.url;
@@ -61,13 +56,11 @@ app.post('/api/download', async (req, res) => {
   const outputFilePath = path.join(__dirname, 'downloads', outputFileName);
 
   try {
-
     const availableFormats = await getAvailableFormats(videoUrl);
     console.log('Available Formats:', availableFormats);
 
-    const cookiesPath = path.join(__dirname, 'cookies.txt'); 
+    const cookiesPath = path.join(__dirname, process.env.COOKIES_PATH || 'cookies.txt'); // Use environment variable or default
     await downloadVideo(videoUrl, outputFilePath, cookiesPath);
-
 
     fs.access(outputFilePath, fs.constants.F_OK, (err) => {
       if (err) {
@@ -79,7 +72,7 @@ app.post('/api/download', async (req, res) => {
           return res.status(500).json({ error: 'Failed to send the video file' });
         }
 
-      
+        // Delete the file after sending it to the client
         fs.unlink(outputFilePath, (err) => {
           if (err) console.error('Failed to delete file:', err);
         });
