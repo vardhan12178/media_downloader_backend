@@ -9,7 +9,7 @@ const app = express();
 
 
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://your-deployed-site-url.com'],
+  origin: ['http://localhost:3000', 'https://instant-video-downloader.vercel.app'],
   methods: 'GET,POST',
   allowedHeaders: 'Content-Type, Authorization'
 }));
